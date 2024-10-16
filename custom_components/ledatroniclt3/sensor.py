@@ -77,7 +77,7 @@ class LedatronicComm:
                     raise Exception("Interrupted")
                 data += next_pkg
 
-            self.current_temp = int.from_bytes(data[0:2], byteorder='big')
+            self.current_temp = int.from_bytes([data[0], data[1]],byteorder='big')
 
             self.current_valve_pos_target = data[2]
             self.current_valve_pos_actual = data[3]
@@ -106,6 +106,7 @@ class LedatronicComm:
             self.puffer_unten = data[34]
             self.puffer_oben = data[36]
             self.vorlauf_temp = data[37]
+            self.pump_speed = data[38]  
             self.schorn_temp = data[47] + (data[46] * 255)
 
             self.ventilator = data[50]
@@ -507,6 +508,36 @@ class LedatronicVentilator(Entity):
 
     def update(self):
         """Retrieve latest state."""
+        try:
+            self.comm.update()
+        except Exception:
+            _LOGGER.error("Failed to get LEDATRONIC LT3 Wifi state.")
+
+
+class LedatronicPumpSpeedSensor(Entity):
+    """Representation of the LedaTronic pump speed sensor."""
+
+    def __init__(self, comm):
+        """Initialize the sensor."""
+        self.comm = comm
+
+    @property
+    def name(self):
+        """Return the name of this sensor."""
+        return "ledatronic_pump_speed"
+
+    @property
+    def state(self):
+        """Return the current state of the entity."""
+        return self.comm.pump_speed  # Returning pump speed
+    
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement of this entity, if any."""
+        return '%';    
+
+    def update(self):
+        """Retrieve the latest state."""
         try:
             self.comm.update()
         except Exception:
